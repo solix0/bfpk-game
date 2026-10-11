@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <link rel="icon" type="image/png" href="logo.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Інтелектуальна гра "Що? Де? Коли?"</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Montserrat:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: radial-gradient(circle at center, #1b2838 0%, #0d121d 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+
+        .gold-text {
+            background: linear-gradient(135deg, #ffe066 0%, #d4af37 50%, #aa7c11 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gold-border {
+            border-image: linear-gradient(135deg, #ffe066, #d4af37, #aa7c11) 1;
+        }
+
+        .gold-btn {
+            background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%);
+            color: #0f172a;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .gold-btn:hover {
+            background: linear-gradient(135deg, #ffe066 0%, #d4af37 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .timer-circle {
+            transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(212, 175, 55, 0.2); }
+            50% { box-shadow: 0 0 30px rgba(212, 175, 55, 0.5); }
+        }
+
+        .pulse-glow {
+            animation: pulseGlow 3s infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        /* Декоративні криві лінії зліва і справа */
+        .side-curve-left, .side-curve-right {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            width: 80px;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.4;
+        }
+
+        .side-curve-left {
+            left: 10px;
+        }
+
+        .side-curve-right {
+            right: 10px;
+        }
+
+        @keyframes waveMove {
+            0% { transform: translateY(0) scaleY(1); }
+            50% { transform: translateY(-15px) scaleY(1.05); }
+            100% { transform: translateY(0) scaleY(1); }
+        }
+
+        .animated-wave {
+            animation: waveMove 8s ease-in-out infinite;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d4af37;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen justify-between p-4 md:p-12 relative overflow-x-hidden">
+
+    <!-- Фоновий канвас для жовтих пилинок/ікринок -->
+    <canvas id="bgDustCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+
+    <!-- Фіксована ліва жовта крива лінія -->
+    <div class="side-curve-left animated-wave hidden md:block z-1">
+        <svg viewBox="0 0 100 1000" preserveAspectRatio="none" class="w-full h-full">
+            <path d="M 80,0 Q 10,250 80,500 Q 10,750 80,1000" fill="none" stroke="url(#goldGradient)" stroke-width="3" />
+            <path d="M 50,0 Q 0,300 50,600 Q 0,850 50,1000" fill="none" stroke="url(#goldGradient)" stroke-width="1.5" opacity="0.6" />
+            <defs>
+                <linearGradient id="goldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#ffe066" />
+                    <stop offset="50%" stop-color="#d4af37" />
+                    <stop offset="100%" stop-color="#aa7c11" />
+                </linearGradient>
+            </defs>
+        </svg>
+    </div>
+
+    <!-- Фіксована права жовта крива лінія (симетрична без перевертання scaleX) -->
+    <div class="side-curve-right animated-wave hidden md:block z-1" style="animation-delay: 4s;">
+        <svg viewBox="0 0 100 1000" preserveAspectRatio="none" class="w-full h-full">
+            <path d="M 20,0 Q 90,250 20,500 Q 90,750 20,1000" fill="none" stroke="url(#goldGradientRight)" stroke-width="3" />
+            <path d="M 50,0 Q 100,300 50,600 Q 100,850 50,1000" fill="none" stroke="url(#goldGradientRight)" stroke-width="1.5" opacity="0.6" />
+            <defs>
+                <linearGradient id="goldGradientRight" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#ffe066" />
+                    <stop offset="50%" stop-color="#d4af37" />
+                    <stop offset="100%" stop-color="#aa7c11" />
+                </linearGradient>
+            </defs>
+        </svg>
+    </div>
+
+    <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+    <header class="text-center mb-6 z-10">
+        <div class="inline-flex items-center space-x-3 mb-2">
+            <i class="fa-solid fa-owl text-3xl md:text-4xl text-yellow-500"></i>
+            <h1 class="font-cinzel text-3xl md:text-5xl font-extrabold tracking-wider gold-text uppercase">
+                Що? Де? Коли?
+            </h1>
+        </div>
+        <p class="text-slate-400 text-sm md:text-base tracking-widest uppercase font-semibold">
+            Інтелектуальний Клуб БФПК
+        </p>
+    </header>
+
+    <main class="container mx-auto max-w-3xl flex-grow flex flex-col justify-center z-10">
+
+        <!-- 1. STEP: REGISTRATION & SETUP -->
+        <section id="setupScreen" class="glass-panel p-6 md:p-10 rounded-2xl pulse-glow animate-fade-in">
+            <h2 class="font-cinzel text-2xl md:text-3xl text-center font-bold text-amber-400 mb-6 border-b border-amber-500/20 pb-3">
+                <i class="fa-solid fa-sliders mr-2"></i> Налаштування та Реєстрація
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-2" for="teamCount">
+                        <i class="fa-solid fa-users mr-2 text-amber-400"></i>Кількість команд:
+                    </label>
+                    <input type="number" id="teamCount" min="1" max="12" value="3" 
+                           class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-amber-300 font-bold focus:outline-none focus:border-amber-500 transition">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-2" for="playersPerTeam">
+                        <i class="fa-solid fa-user-group mr-2 text-amber-400"></i>Гравців у команді:
+                    </label>
+                    <input type="number" id="playersPerTeam" min="1" max="10" value="6" 
+                           class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-amber-300 font-bold focus:outline-none focus:border-amber-500 transition">
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-200">
+                        <i class="fa-solid fa-id-card mr-2 text-amber-400"></i>Назви команд
+                    </h3>
+                    <button type="button" id="btnGenerateTeams" class="text-xs bg-slate-800 hover:bg-slate-700 text-amber-400 px-3 py-1.5 rounded-md border border-amber-500/30 transition">
+                        <i class="fa-solid fa-arrows-rotate mr-1"></i>Очистити
+                    </button>
+                </div>
+                <div id="teamsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+
+            <button id="btnStartGame" class="gold-btn w-full py-4 rounded-xl text-lg uppercase tracking-wider font-extrabold flex items-center justify-center space-x-2">
+                <span>Почати ГРУ</span>
+                <i class="fa-solid fa-play"></i>
+            </button>
+        </section>
+
+        <!-- 2. WELCOME SPLASH SCREEN -->
+        <section id="welcomeScreen" class="hidden glass-panel p-8 md:p-14 rounded-2xl pulse-glow animate-fade-in text-center flex flex-col items-center justify-center">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-4xl mb-6 shadow-inner">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <h2 class="font-cinzel text-3xl md:text-5xl font-black gold-text uppercase mb-4 leading-tight">
+                Вітаємо на вікторині «Що? Де? Коли?»
+            </h2>
+            <p class="text-slate-300 text-lg md:text-xl font-medium mb-8 max-w-2xl">
+                Бродівського фахового педагогічного коледжу імені Маркіяна Шашкевича
+            </p>
+            <button id="btnBeginFromWelcome" class="gold-btn px-10 py-4 rounded-xl text-lg uppercase tracking-wider font-extrabold flex items-center justify-center space-x-3">
+                <span>Почати</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </section>
+
+        <!-- 3. STEP: ROUND SPLASH SCREEN -->
+        <section id="splashScreen" class="hidden glass-panel p-10 md:p-16 rounded-2xl text-center animate-fade-in flex flex-col items-center justify-center min-h-[350px]">
+            <span class="text-amber-400/60 uppercase tracking-widest text-lg font-bold mb-2">Увага, Команди!</span>
+            <h2 id="splashRoundTitle" class="font-cinzel text-4xl md:text-6xl font-black text-amber-300 mb-4 gold-text">
+                РАУНД 1
+            </h2>
+            <p id="splashQuestionTitle" class="text-2xl md:text-3xl text-slate-200 font-semibold mb-6">
+                Питання № 1
+            </p>
+            <div class="w-16 h-1 bg-amber-500/50 rounded-full animate-pulse"></div>
+        </section>
+
+        <!-- 4. STEP: QUESTION & TIMER SCREEN -->
+        <section id="questionScreen" class="hidden glass-panel p-6 md:p-10 rounded-2xl animate-fade-in">
+            <div class="flex justify-between items-center border-b border-slate-700/60 pb-4 mb-6">
+                <span id="qRoundBadge" class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-4 py-1.5 rounded-full font-bold text-sm md:text-base">
+                    Раунд 1 • Питання 1/2
+                </span>
+                <span id="qTotalProgress" class="text-slate-400 font-semibold text-sm md:text-base">
+                    Питання 1 з 22
+                </span>
+            </div>
+
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="text-xs uppercase tracking-wider text-slate-400 font-semibold">
+                        <i class="fa-solid fa-quote-left mr-1"></i>Текст питання:
+                    </label>
+                    <span class="text-xs text-slate-500">(Ведучий може редагувати текст)</span>
+                </div>
+                <div id="questionText" contenteditable="true" class="bg-slate-900/90 border border-amber-500/30 rounded-xl p-5 text-lg md:text-2xl text-slate-100 font-medium leading-relaxed min-h-[120px] focus:outline-none focus:border-amber-400 transition">
+                    Завантаження питання...
+                </div>
+            </div>
+
+            <div class="flex flex-col items-center justify-center mb-8">
+                <div class="relative w-48 h-48 md:w-56 md:h-56 flex items-center justify-center">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="44" stroke="#1e293b" stroke-width="8" fill="transparent" />
+                        <circle id="timerCircle" cx="50" cy="50" r="44" stroke="#d4af37" stroke-width="8" fill="transparent" 
+                                stroke-dasharray="276.46" stroke-dashoffset="0" stroke-linecap="round" class="timer-circle" />
+                    </svg>
+                    <div class="absolute flex flex-col items-center">
+                        <span id="timerDisplay" class="font-cinzel text-5xl md:text-6xl font-extrabold text-amber-300">60</span>
+                        <span class="text-xs text-slate-400 uppercase tracking-widest mt-1">Секунд</span>
+                    </div>
+                </div>
+
+                <div class="flex space-x-3 mt-4">
+                    <button id="btnPauseTimer" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-4 py-2 rounded-lg text-sm font-semibold transition">
+                        <i class="fa-solid fa-pause mr-1"></i> Пауза
+                    </button>
+                    <button id="btnResetTimer" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-4 py-2 rounded-lg text-sm font-semibold transition">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Скинути
+                    </button>
+                </div>
+            </div>
+
+            <button id="btnFinishDiscussion" class="gold-btn w-full py-4 rounded-xl text-lg uppercase tracking-wider font-extrabold flex items-center justify-center space-x-2">
+                <span>До статистики</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </section>
+
+        <!-- 5. STEP: ROUND STATS & SCORE BOARD -->
+        <section id="statsScreen" class="hidden glass-panel p-6 md:p-10 rounded-2xl animate-fade-in">
+            <h2 class="font-cinzel text-2xl md:text-3xl text-center font-bold text-amber-400 mb-2">
+                <i class="fa-solid fa-chart-column mr-2"></i>Результати & Статистика
+            </h2>
+            <p id="statsSubtitle" class="text-center text-slate-400 mb-6 text-sm md:text-base">
+                Введіть бали за поточне питання
+            </p>
+
+            <div id="statsTeamsList" class="space-y-4 mb-8"></div>
+
+            <button id="btnNextQuestion" class="gold-btn w-full py-4 rounded-xl text-lg uppercase tracking-wider font-extrabold flex items-center justify-center space-x-2">
+                <span>Продовжити</span>
+                <i class="fa-solid fa-forward"></i>
+            </button>
+        </section>
+
+        <!-- 6. STEP: FINAL WINNERS SCREEN -->
+        <section id="finalScreen" class="hidden relative p-6 md:p-10 rounded-2xl text-center animate-fade-in overflow-hidden shadow-2xl border border-amber-500/30">
+            <div class="absolute inset-0 w-full h-full overflow-hidden z-0">
+                <video id="bgFinalVideo" autoplay loop playsinline class="w-full h-full object-cover">
+                    <source src="video.mp4" type="video/mp4">
+                </video>
+                <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]"></div>
+            </div>
+
+            <div class="relative z-10">
+                <div class="mb-6">
+                    <i class="fa-solid fa-trophy text-6xl md:text-7xl text-amber-400 mb-3 animate-bounce"></i>
+                    <h2 class="font-cinzel text-3xl md:text-5xl font-black gold-text uppercase">
+                        Вітаємо Переможців!
+                    </h2>
+                    <p class="text-slate-300 mt-2 text-base md:text-lg">Гра "Що? Де? Коли?" успішно завершена!</p>
+                </div>
+
+                <div id="leaderboardList" class="space-y-4 mb-8 text-left max-w-xl mx-auto"></div>
+
+                <button id="btnRestartGame" class="gold-btn w-full max-w-xl mx-auto py-4 rounded-xl text-lg uppercase tracking-wider font-extrabold flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Розпочати Нову Гру</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="text-center text-slate-500 text-xs mt-6 z-10">
+        <p>© 2026 Бродівський фаховий педагогічний коледж імені Маркіяна Шашкевича.</p>
+    </footer>
+
+    <script>
+        const TOTAL_ROUNDS = 11;
+        const QUESTIONS_PER_ROUND = 2;
+        const TOTAL_QUESTIONS = TOTAL_ROUNDS * QUESTIONS_PER_ROUND;
+
+        let gameConfig = {
+            playersPerTeam: 6,
+            teams: [] 
+        };
+
+        let currentRound = 1;
+        let currentQuestionInRound = 1;
+        let globalQuestionIndex = 1;
+        let currentScreenId = 'setupScreen';
+
+        const TIMER_DURATION = 60;
+        let timerSecondsLeft = TIMER_DURATION;
+        let timerInterval = null;
+        let isTimerPaused = false;
+
+        const clockAudio = new Audio('clock.mp3');
+        clockAudio.loop = true;
+        const gongAudio = new Audio('gong.mp3');
+
+        const sampleQuestions = [
+            "У стародавньому Римі це робили для перевірки чистоти винуватця. У середні віки це стало атрибутом дворян. А зараз це роблять практично всі водії. Про що йдеться? (Відповідь: Опускання скла / відкривання шоломів)",
+            "В Японії на станціях метро встановлюють дзеркала на кінцях платформ. Це зроблено не для краси й не для перевірки зачісок. Яку важливу соціальну функцію вони виконують? (Відповідь: Зниження кількості самогубств)",
+            "Цей предмет є у кожному будинку. Раніше його робили із сухої трави, а зараз — здебільшого із синтетики. Назва походить від дієслова, що означає дію. Що це? (Відповідь: Віник)",
+            "Який популярний предмет гардеробу спочатку створювався виключно як чоловіча спідня білизна під час Першої світової війни, а сьогодні є базовим одергом для будь-кого? (Відповідь: Футболка / T-shirt)",
+            "Відомий письменник Марк Твен патентував не лише книжки. Всі ми користуємося його винаходом у багатьох сучасних блокнотах та альбомах. Що це? (Відповідь: Відривні листки / перфорація)",
+            "В одном з ресторанів Парижа на кожному столі стоїть пісочний годинник на 3 хвилини. Навіщо він відвідувачам? (Відповідь: Для заварювання чаю / виклику офіціанта)",
+            "Англійське прислів'я каже: 'Людина, яка не робить помилок, зазвичай не робить...' Закінчіть прислів'я одним словом. (Відповідь: Нічого)",
+            "Яка тварина здатна бачити ультрафіолетове випромінювання і використовує це для пошуку здобичі за слідами? (Відповідь: Північний олень / Сокіл)",
+            "Археологи знайшли в Єгипті глиняний посуд із залишками густої маси віком 3000 років. Цей продукт виявився абсолютно придатним до споживання. Що це за продукт? (Відповідь: Мед)",
+            "У давнину цей дорогоцінний матеріал називали 'застиглими сльозами сонця'. Про що йдеться? (Відповідь: Бурштин)",
+            "Цей науковий прилад назвали на честь грецького слова, що означає 'бачити далеко'. Що це за прилад? (Відповідь: Телескоп)",
+            "Ця гра з'явилася в Індії під назвою 'Чатуранґа' понад 1500 років тому. Як ми називаємо її сьогодні? (Відповідь: Шахи)",
+            "Яка єдина речовина на Землі існує у трьох агрегатних станах у природних умовах? (Відповідь: Вода)",
+            "Цей відомий художник і винахідник писав свої щоденники справа наліво у дзеркальному відображенні. Хто це? (Відповідь: Леонардо да Вінчі)",
+            "Що в перекладі з грецької мови означає слово 'алфавіт' (абетка)? (Відповідь: Перші дві літери - Альфа та Бета)",
+            "У яке морі на нашій планеті не впадає жодна річка? (Відповідь: Червоне море)",
+            "Який орган людського тіла споживає близько 20% усього кисню, хоча становить лише 2% ваги тіла? (Відповідь: Мозок)",
+            "Який відомий композитор написав свої найвидатніші симфонії, будучи абсолютно глухим? (Відповідь: Людвиг ван Бетховен)",
+            "Яка фрукт або ягода названа на честь птаха, оскільки зовні дуже схожа на його тіло? (Відповідь: Ківі)",
+            "Який предмет є символом інтелектуального клубу 'Що? Де? Коли?' та зображений на емблемі? (Відповідь: Сова)",
+            "Яке місто називають 'Вічним містом'? (Відповідь: Рим)",
+            "Фінальне питання: Як називається золота нагорода, яку отримує найкращий гравець клубу 'Що? Де? Коли?'? (Відповідь: Кришталева / Золота Сова)"
+        ];
+
+        const setupScreen = document.getElementById('setupScreen');
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const splashScreen = document.getElementById('splashScreen');
+        const questionScreen = document.getElementById('questionScreen');
+        const statsScreen = document.getElementById('statsScreen');
+        const finalScreen = document.getElementById('finalScreen');
+
+        const teamCountInput = document.getElementById('teamCount');
+        const playersPerTeamInput = document.getElementById('playersPerTeam');
+        const teamsContainer = document.getElementById('teamsContainer');
+        const btnGenerateTeams = document.getElementById('btnGenerateTeams');
+        const btnStartGame = document.getElementById('btnStartGame');
+        const btnBeginFromWelcome = document.getElementById('btnBeginFromWelcome');
+
+        const splashRoundTitle = document.getElementById('splashRoundTitle');
+        const splashQuestionTitle = document.getElementById('splashQuestionTitle');
+
+        const qRoundBadge = document.getElementById('qRoundBadge');
+        const qTotalProgress = document.getElementById('qTotalProgress');
+        const questionText = document.getElementById('questionText');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const timerCircle = document.getElementById('timerCircle');
+        const btnPauseTimer = document.getElementById('btnPauseTimer');
+        const btnResetTimer = document.getElementById('btnResetTimer');
+        const btnFinishDiscussion = document.getElementById('btnFinishDiscussion');
+
+        const statsTeamsList = document.getElementById('statsTeamsList');
+        const btnNextQuestion = document.getElementById('btnNextQuestion');
+        const leaderboardList = document.getElementById('leaderboardList');
+        const btnRestartGame = document.getElementById('btnRestartGame');
+
+        const bgFinalVideo = document.getElementById('bgFinalVideo');
+
+        function hideAllScreens() {
+            setupScreen.classList.add('hidden');
+            welcomeScreen.classList.add('hidden');
+            splashScreen.classList.add('hidden');
+            questionScreen.classList.add('hidden');
+            statsScreen.classList.add('hidden');
+            finalScreen.classList.add('hidden');
+            
+            if (bgFinalVideo) bgFinalVideo.pause();
+        }
+
+        function saveGameState(screenId) {
+            currentScreenId = screenId || currentScreenId;
+            const state = {
+                gameConfig,
+                currentRound,
+                currentQuestionInRound,
+                globalQuestionIndex,
+                currentScreenId
+            };
+            localStorage.setItem('chgk_game_state', JSON.stringify(state));
+        }
+
+        function loadGameState() {
+            const saved = localStorage.getItem('chgk_game_state');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    gameConfig = parsed.gameConfig || gameConfig;
+                    currentRound = parsed.currentRound || 1;
+                    currentQuestionInRound = parsed.currentQuestionInRound || 1;
+                    globalQuestionIndex = parsed.globalQuestionIndex || 1;
+                    currentScreenId = parsed.currentScreenId || 'setupScreen';
+                    return true;
+                } catch (e) {
+                    console.error('Error loading saved state', e);
+                }
+            }
+            return false;
+        }
+
+        function renderTeamInputs() {
+            const count = parseInt(teamCountInput.value) || 2;
+            teamsContainer.innerHTML = '';
+
+            for (let i = 0; i < count; i++) {
+                const existingTeamName = (gameConfig.teams && gameConfig.teams[i]) ? gameConfig.teams[i].name : `-`;
+                const div = document.createElement('div');
+                div.className = 'flex items-center space-x-2';
+                div.innerHTML = `
+                    <span class="text-amber-400 font-bold w-6 text-right">${i + 1}.</span>
+                    <input type="text" value="${existingTeamName}" placeholder="Назва команди" 
+                           class="team-name-input flex-grow bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 font-medium focus:outline-none focus:border-amber-500 transition">
+                `;
+                teamsContainer.appendChild(div);
+            }
+        }
+
+        btnGenerateTeams.addEventListener('click', () => {
+            gameConfig.teams = [];
+            renderTeamInputs();
+        });
+        teamCountInput.addEventListener('change', renderTeamInputs);
+
+        function playGongSound() {
+            try {
+                gongAudio.currentTime = 0;
+                gongAudio.play().catch(e => console.log('Gong audio blocked', e));
+            } catch (e) {
+                console.log('Gong error', e);
+            }
+        }
+
+        function startClockSound() {
+            try {
+                clockAudio.currentTime = 0;
+                clockAudio.play().catch(e => console.log('Clock audio blocked', e));
+            } catch (e) {
+                console.log('Clock error', e);
+            }
+        }
+
+        function stopClockSound() {
+            try {
+                clockAudio.pause();
+                clockAudio.currentTime = 0;
+            } catch (e) {
+                console.log('Stop clock error', e);
+            }
+        }
+
+        btnStartGame.addEventListener('click', () => {
+            const inputs = document.querySelectorAll('.team-name-input');
+            const teams = [];
+
+            inputs.forEach(input => {
+                const name = input.value.trim();
+                if (name) {
+                    teams.push({ name: name, score: 0 });
+                }
+            });
+
+            if (teams.length === 0) {
+                alert('Будь ласка, введіть хоча б одну назву команди!');
+                return;
+            }
+
+            gameConfig.teams = teams;
+            gameConfig.playersPerTeam = parseInt(playersPerTeamInput.value) || 6;
+
+            currentRound = 1;
+            currentQuestionInRound = 1;
+            globalQuestionIndex = 1;
+
+            hideAllScreens();
+            welcomeScreen.classList.remove('hidden');
+            saveGameState('welcomeScreen');
+        });
+
+        btnBeginFromWelcome.addEventListener('click', () => {
+            hideAllScreens();
+            startRoundSplash();
+        });
+
+        function startRoundSplash() {
+            hideAllScreens();
+            splashScreen.classList.remove('hidden');
+
+            splashRoundTitle.textContent = `РАУНД ${currentRound}`;
+            splashQuestionTitle.textContent = `Питання № ${currentQuestionInRound}`;
+
+            playGongSound();
+            saveGameState('splashScreen');
+
+            setTimeout(() => {
+                splashScreen.classList.add('hidden');
+                loadQuestionScreen();
+            }, 3000);
+        }
+
+        function loadQuestionScreen() {
+            hideAllScreens();
+            questionScreen.classList.remove('hidden');
+
+            qRoundBadge.textContent = `Раунд ${currentRound} • Питання ${currentQuestionInRound}/${QUESTIONS_PER_ROUND}`;
+            qTotalProgress.textContent = `Питання ${globalQuestionIndex} з ${TOTAL_QUESTIONS}`;
+
+            const qIndex = (globalQuestionIndex - 1) % sampleQuestions.length;
+            questionText.textContent = sampleQuestions[qIndex];
+
+            resetTimer();
+            startTimer();
+            saveGameState('questionScreen');
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            isTimerPaused = false;
+            btnPauseTimer.innerHTML = '<i class="fa-solid fa-pause mr-1"></i> Пауза';
+
+            startClockSound();
+
+            timerInterval = setInterval(() => {
+                if (!isTimerPaused) {
+                    timerSecondsLeft--;
+                    updateTimerUI();
+
+                    if (timerSecondsLeft <= 0) {
+                        clearInterval(timerInterval);
+                        stopClockSound();
+                        playGongSound();
+                        setTimeout(() => {
+                            goToStatsScreen();
+                        }, 500);
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI() {
+            timerDisplay.textContent = timerSecondsLeft;
+            const strokeDashoffset = 276.46 - (276.46 * timerSecondsLeft) / TIMER_DURATION;
+            timerCircle.style.strokeDashoffset = strokeDashoffset;
+
+            if (timerSecondsLeft <= 10) {
+                timerCircle.style.stroke = '#ef4444';
+                timerDisplay.classList.add('text-red-500');
+                timerDisplay.classList.remove('text-amber-300');
+            } else {
+                timerCircle.style.stroke = '#d4af37';
+                timerDisplay.classList.remove('text-red-500');
+                timerDisplay.classList.add('text-amber-300');
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            stopClockSound();
+            timerSecondsLeft = TIMER_DURATION;
+            updateTimerUI();
+        }
+
+        btnPauseTimer.addEventListener('click', () => {
+            isTimerPaused = !isTimerPaused;
+            if (isTimerPaused) {
+                clockAudio.pause();
+                btnPauseTimer.innerHTML = '<i class="fa-solid fa-play mr-1"></i> Відновити';
+            } else {
+                clockAudio.play().catch(e => console.log('Resume clock error', e));
+                btnPauseTimer.innerHTML = '<i class="fa-solid fa-pause mr-1"></i> Пауза';
+            }
+        });
+
+        btnResetTimer.addEventListener('click', () => {
+            resetTimer();
+            startTimer();
+        });
+
+        btnFinishDiscussion.addEventListener('click', () => {
+            clearInterval(timerInterval);
+            stopClockSound();
+            playGongSound();
+            goToStatsScreen();
+        });
+
+        function goToStatsScreen() {
+            hideAllScreens();
+            statsScreen.classList.remove('hidden');
+
+            renderStatsTeams();
+            saveGameState('statsScreen');
+        }
+
+        function renderStatsTeams() {
+            statsTeamsList.innerHTML = '';
+
+            gameConfig.teams.forEach((team, index) => {
+                const item = document.createElement('div');
+                item.className = 'bg-slate-900/80 border border-slate-700/80 rounded-xl p-4 flex justify-between items-center';
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="text-amber-400 font-bold text-lg">${index + 1}.</span>
+                        <span class="text-slate-100 font-bold text-lg">${team.name}</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button onclick="changeScore(${index}, -1)" class="w-10 h-10 bg-slate-800 hover:bg-red-900/50 text-red-400 border border-slate-600 rounded-lg font-bold text-xl flex items-center justify-center transition">
+                            -
+                        </button>
+                        <span class="font-cinzel text-2xl font-black text-amber-300 w-8 text-center">${team.score}</span>
+                        <button onclick="changeScore(${index}, 1)" class="w-10 h-10 bg-slate-800 hover:bg-emerald-900/50 text-emerald-400 border border-slate-600 rounded-lg font-bold text-xl flex items-center justify-center transition">
+                            +
+                        </button>
+                    </div>
+                `;
+                statsTeamsList.appendChild(item);
+            });
+        }
+
+        window.changeScore = function(teamIndex, delta) {
+            gameConfig.teams[teamIndex].score += delta;
+            if (gameConfig.teams[teamIndex].score < 0) {
+                gameConfig.teams[teamIndex].score = 0;
+            }
+            renderStatsTeams();
+            saveGameState('statsScreen');
+        };
+
+        btnNextQuestion.addEventListener('click', () => {
+            if (globalQuestionIndex >= TOTAL_QUESTIONS) {
+                showFinalLeaderboard();
+                return;
+            }
+
+            globalQuestionIndex++;
+            currentQuestionInRound++;
+
+            if (currentQuestionInRound > QUESTIONS_PER_ROUND) {
+                currentQuestionInRound = 1;
+                currentRound++;
+            }
+
+            startRoundSplash();
+        });
+
+        function showFinalLeaderboard() {
+            hideAllScreens();
+            finalScreen.classList.remove('hidden');
+
+            if (bgFinalVideo) {
+                bgFinalVideo.volume = 0.3;
+                bgFinalVideo.play().catch(e => console.log('Autoplay blocked'));
+            }
+
+            const sortedTeams = [...gameConfig.teams].sort((a, b) => b.score - a.score);
+
+            leaderboardList.innerHTML = '';
+
+            sortedTeams.forEach((team, index) => {
+                let badge = `<span class="font-bold text-slate-400 w-6">${index + 1}.</span>`;
+                let bgClass = 'bg-slate-900/70 border-slate-800 backdrop-blur-md';
+
+                if (index === 0) {
+                    badge = `<i class="fa-solid fa-medal text-amber-400 text-xl w-6"></i>`;
+                    bgClass = 'bg-gradient-to-r from-amber-500/30 to-slate-900/80 border-amber-500/50 backdrop-blur-md pulse-glow';
+                } else if (index === 1) {
+                    badge = `<i class="fa-solid fa-medal text-slate-300 text-xl w-6"></i>`;
+                    bgClass = 'bg-slate-800/80 border-slate-600 backdrop-blur-md';
+                } else if (index === 2) {
+                    badge = `<i class="fa-solid fa-medal text-amber-700 text-xl w-6"></i>`;
+                    bgClass = 'bg-slate-800/60 border-slate-700 backdrop-blur-md';
+                }
+
+                const item = document.createElement('div');
+                item.className = `${bgClass} border rounded-xl p-4 flex justify-between items-center`;
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        ${badge}
+                        <span class="text-slate-100 font-bold text-lg">${team.name}</span>
+                    </div>
+                    <span class="font-cinzel text-3xl font-black text-amber-300">${team.score} <span class="text-xs text-slate-400 font-normal">балів</span></span>
+                `;
+                leaderboardList.appendChild(item);
+            });
+
+            startConfetti();
+            saveGameState('finalScreen');
+        }
+
+        btnRestartGame.addEventListener('click', () => {
+            stopConfetti();
+            localStorage.removeItem('chgk_game_state');
+            hideAllScreens();
+            setupScreen.classList.remove('hidden');
+            renderTeamInputs();
+        });
+
+        // Фотові жовті пилинки
+        const dustCanvas = document.getElementById('bgDustCanvas');
+        const dustCtx = dustCanvas.getContext('2d');
+        let dustParticles = [];
+
+        function resizeDustCanvas() {
+            dustCanvas.width = window.innerWidth;
+            dustCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeDustCanvas);
+        resizeDustCanvas();
+
+        function initDust() {
+            dustParticles = [];
+            for (let i = 0; i < 50; i++) {
+                dustParticles.push({
+                    x: Math.random() * dustCanvas.width,
+                    y: Math.random() * dustCanvas.height,
+                    radius: Math.random() * 2 + 1,
+                    color: Math.random() > 0.5 ? '#ffe066' : '#d4af37',
+                    speedY: (Math.random() - 0.5) * 0.4,
+                    speedX: (Math.random() - 0.5) * 0.4,
+                    alpha: Math.random() * 0.5 + 0.1
+                });
+            }
+        }
+        initDust();
+
+        function animateDust() {
+            dustCtx.clearRect(0, 0, dustCanvas.width, dustCanvas.height);
+            dustParticles.forEach(p => {
+                p.x += p.speedX;
+                p.y += p.speedY;
+
+                if (p.x < 0) p.x = dustCanvas.width;
+                if (p.x > dustCanvas.width) p.x = 0;
+                if (p.y < 0) p.y = dustCanvas.height;
+                if (p.y > dustCanvas.height) p.y = 0;
+
+                dustCtx.save();
+                dustCtx.globalAlpha = p.alpha;
+                dustCtx.beginPath();
+                dustCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                dustCtx.fillStyle = p.color;
+                dustCtx.shadowBlur = 8;
+                dustCtx.shadowColor = p.color;
+                dustCtx.fill();
+                dustCtx.restore();
+            });
+            requestAnimationFrame(animateDust);
+        }
+        animateDust();
+
+        let confettiInterval = null;
+        const canvas = document.getElementById('confettiCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let particles = [];
+
+        function startConfetti() {
+            particles = [];
+            const colors = ['#d4af37', '#ffe066', '#38bdf8', '#f43f5e', '#a855f7'];
+
+            for (let i = 0; i < 120; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 8 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speedY: Math.random() * 3 + 2,
+                    speedX: Math.random() * 2 - 1,
+                    rotation: Math.random() * 360
+                });
+            }
+
+            if (!confettiInterval) {
+                confettiInterval = setInterval(drawConfetti, 20);
+            }
+        }
+
+        function drawConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(p => {
+                p.y += p.speedY;
+                p.x += p.speedX;
+                p.rotation += 2;
+
+                if (p.y > canvas.height) {
+                    p.y = -10;
+                    p.x = Math.random() * canvas.width;
+                }
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                ctx.restore();
+            });
+        }
+
+        function stopConfetti() {
+            clearInterval(confettiInterval);
+            confettiInterval = null;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        window.onload = function() {
+            const hasData = loadGameState();
+            hideAllScreens();
+
+            if (hasData) {
+                if (gameConfig.teams && gameConfig.teams.length > 0) {
+                    teamCountInput.value = gameConfig.teams.length;
+                    playersPerTeamInput.value = gameConfig.playersPerTeam || 6;
+                }
+
+                if (currentScreenId === 'welcomeScreen') {
+                    welcomeScreen.classList.remove('hidden');
+                } else if (currentScreenId === 'splashScreen') {
+                    splashScreen.classList.remove('hidden');
+                    splashRoundTitle.textContent = `РАУНД ${currentRound}`;
+                    splashQuestionTitle.textContent = `Питання № ${currentQuestionInRound}`;
+                } else if (currentScreenId === 'questionScreen') {
+                    questionScreen.classList.remove('hidden');
+                    qRoundBadge.textContent = `Раунд ${currentRound} • Питання ${currentQuestionInRound}/${QUESTIONS_PER_ROUND}`;
+                    qTotalProgress.textContent = `Питання ${globalQuestionIndex} з ${TOTAL_QUESTIONS}`;
+                    const qIndex = (globalQuestionIndex - 1) % sampleQuestions.length;
+                    questionText.textContent = sampleQuestions[qIndex];
+                    resetTimer();
+                    startTimer();
+                } else if (currentScreenId === 'statsScreen') {
+                    statsScreen.classList.remove('hidden');
+                    renderStatsTeams();
+                } else if (currentScreenId === 'finalScreen') {
+                    showFinalLeaderboard();
+                } else {
+                    setupScreen.classList.remove('hidden');
+                }
+            } else {
+                setupScreen.classList.remove('hidden');
+            }
+
+            renderTeamInputs();
+        };
+    </script>
+</body>
+</html>
