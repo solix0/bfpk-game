@@ -119,11 +119,40 @@
         }
 
         #questionText {
-    white-space: pre-line;
-}
+            white-space: pre-line;
+        }
     </style>
 </head>
 <body class="flex flex-col min-h-screen justify-between p-4 md:p-12 relative overflow-x-hidden">
+
+    <!-- Кнопка "i" у нижньому правому куті -->
+    <button id="btnInfoReset" title="Скинути налаштування" 
+            class="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40 w-11 h-11 md:w-12 md:h-12 rounded-full gold-btn flex items-center justify-center text-lg md:text-xl shadow-lg cursor-pointer">
+        <i class="fa-solid fa-info"></i>
+    </button>
+
+    <!-- Діалогове вікно підтвердження скидання -->
+    <div id="resetModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+        <div class="glass-panel border border-amber-500/40 rounded-2xl p-6 md:p-8 max-w-md w-full text-center animate-fade-in shadow-2xl">
+            <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-2xl mb-4">
+                <i class="fa-solid fa-rotate-left"></i>
+            </div>
+            <h3 class="font-cinzel text-2xl font-bold text-amber-300 mb-2">
+                Скинути налаштування?
+            </h3>
+            <p class="text-slate-300 text-sm md:text-base mb-6">
+                Усі поточні результати та прогрес гри буде очищено, а гру повернуто до головного меню.
+            </p>
+            <div class="grid grid-cols-2 gap-4">
+                <button id="btnConfirmResetYes" class="gold-btn py-3 rounded-xl font-extrabold uppercase tracking-wider text-sm md:text-base">
+                    Так
+                </button>
+                <button id="btnConfirmResetNo" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 py-3 rounded-xl font-bold uppercase tracking-wider text-sm md:text-base transition">
+                    Ні
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Фоновий канвас для жовтих пилинок/ікринок -->
     <canvas id="bgDustCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
@@ -251,7 +280,7 @@
                     Раунд 1 • Питання 1/2
                 </span>
                 <span id="qTotalProgress" class="text-slate-400 font-semibold text-sm md:text-base">
-                    Питання 1 з 22
+                    Питання 1 з 24
                 </span>
             </div>
 
@@ -347,7 +376,7 @@
     </footer>
 
     <script>
-        const TOTAL_ROUNDS = 11;
+        const TOTAL_ROUNDS = 12;
         const QUESTIONS_PER_ROUND = 2;
         const TOTAL_QUESTIONS = TOTAL_ROUNDS * QUESTIONS_PER_ROUND;
 
@@ -370,29 +399,31 @@
         clockAudio.loop = true;
         const gongAudio = new Audio('gong.mp3');
 
-const sampleQuestions = [
-            "Музичний мікс:\nЯкий композитор написав «Місячну сонату»?\nА) Вольфганг Амадей Моцарт\nБ) Фредерік Шопен\nВ) Людвіг ван Бетховен\nГ) Йоганн Себастьян Бах",
-            "Музичний мікс:\nЯкий український виконавець відомий піснею «Плакала»?\nА) Оля Полякова\nБ) KAZKA\nВ) Go_A\nГ) The Hardkiss",
-            "Спортивний драйв:\nСкільки кілець зображено на олімпійському прапорі?\nА) 4\nБ) 5\nВ) 6\nГ) 7",
-            "Спортивний драйв:\nЯк називається ситуація в шахах, коли королю немає куди ходити, але шаху немає?\nА) Мат\nБ) Пат\nВ) Рокіровка\nГ) Шах",
-            "День студента:\nКоли відзначають Міжнародний день студента?\nА) 15 листопада\nБ) 16 листопада\nВ) 17 листопада\nГ) 19 листопада",
-            "День студента:\nЯк називається період складання студентами іспитів?\nА) Практика\nБ) Семестр\nВ) Сесія\nГ) Канікули",
-            "Наш БФПК:\nНа честь кого названий Бродівський фаховий педагогічний коледж?\nА) Маркіяна Шашкевича\nБ) Івана Франка\nВ) Тараса Шевченка\nГ) Романа Шухевича",
-            "Наш БФПК:\nЯк називається людина, яка представляє інтереси студентської групи?\nА) Куратор\nБ) Директор\nВ) Староста\nГ) Профорг",
-            "Навколо світу:\nЯке місто розташоване на двох континентах — Європі та Азії?\nА) Афіни\nБ) Стамбул\nВ) Каїр\nГ) Баку",
-            "Навколо світу:\nЯка країна подарувала США Статую Свободи?\nА) Італія\nБ) Іспанія\nВ) Франція\nГ) Німеччина",
-            "Кіно та серіали:\nЯк називається вигаданий метал, з якого зроблено щит Капітана Америки?\nА) Адамантій\nБ) Вібраніум\nВ) Криптоніт\nГ) Титан",
-            "Кіно та серіали:\nЯкий актор зіграв Джека у фільмі «Титанік»?\nА) Бред Пітт\nБ) Метт Деймон\nВ) Леонардо Ді Капріо\nГ) Том Круз",
-            "Розумники:\nСкільки місяців у році мають 28 днів?\nА) Один\nБ) Два\nВ) Шість\nГ) Дванадцять",
-            "Розумники:\nЩо важче: кілограм заліза чи кілограм пір'я?\nА) Залізо\nБ) Пір'я\nВ) Залежить від об'єму\nГ) Однакова вага",
-            "Без сміху не можна:\nЯка тварина може спати стоячи?\nА) Свиня\nБ) Кінь\nВ) Собака\nГ) Кіт",
-            "Без сміху не можна:\nЯк називається слово, яке читається однаково зліва направо і справа наліво?\nА) Омонім\nБ) Синонім\nВ) Паліндром\nГ) Антонім",
-            "Смачна перерва:\nЯка країна вважається батьківщиною страви паелья?\nА) Італія\nБ) Португалія\nВ) Іспанія\nГ) Греція",
-            "Смачна перерва:\nЗ чого виготовляють шоколад?\nА) Кавових зерен\nБ) Какао-бобів\nВ) Ванільних зерен\nГ) Фісташок",
-            "Світ трендів:\nЯк називається технологія, що дозволяє безконтактно оплачувати покупки телефоном?\nА) NFC\nБ) GPS\nВ) Bluetooth\nГ) Wi-Fi",
-            "Світ трендів:\nЩо таке «фішинг» в інтернеті?\nА) Метод пошуку інформації\nБ) Вид онлайн-гри\nВ) Вид інтернет-шахрайства\nГ) Спосіб стиснення файлів",
-            "Тіло людини:\nЯкий орган людини споживає найбільше кисню у стані спокою?\nА) Серце\nБ) Печінка\nВ) Головний мозок\nГ) Нирки",
-            "Тіло людини:\nЯкий орган перекачує кров по організму?\nА) Легені\nБ) Печінка\nВ) Серце\nГ) Нирки"
+        const sampleQuestions = [
+            "Музичний мікс:\nЯкий український композитор створив мелодію всесвітньо відомого «Щедрика»?\nА) Микола Лисенко\nБ) Микола Леонтович\nВ) Станіслав Людкевич\nГ) Мирослав Скорик",
+            "Музичний мікс:\nЯка українська співачка перемогла на Євробаченні у 2016 році з піснею «1944»?\nА) Руслана\nБ) Тіна Кароль\nВ) Джамала\nГ) Злата Огнєвіч",
+            "Спортивний драйв:\nСкільки олімпійських кілець зображено на прапорі Олімпійських ігор?\nА) 4\nБ) 5\nВ) 6\nГ) 7",
+            "Спортивний драйв:\nЯка збірна стала чемпіоном світу з футболу у 2022 році?\nА) Франція\nБ) Бразилія\nВ) Аргентина\nГ) Німеччина",
+            "День студента:\nУ Японії студенти беруть на іспит талісман — продукт, створений в Європі. Тут все просто, його назва співзвучна з японським виразом kitto katsu, що перекладається як «ти неодмінно переможеш». Вгадайте, про який продукт мова?\nА) Snickers\nБ) KitKat\nВ) Twix\nГ) Bounty",
+            "День студента:\nЯкий пристрій студент заводить увечері, але вранці робить вигляд, що його не існує?\nА) Чайник\nБ) Ноутбук\nВ) Будильник\nГ) Павербанк",
+            "Наш БФПК:\nУ якому році було засновано Бродівське педагогічне училище?\nА) 1939 рік\nБ) 1945 рік\nВ) 1954 рік\nГ) 1961 рік",
+            "Наш БФПК:\nЯкий природний елемент зробив фасад історичної будівлі коледжу своєрідною фотозоною міста?\nА) Плющ\nБ) Дикий виноград\nВ) Клематис\nГ) Троянди",
+            "Навколо світу:\nКолись її будували для захисту від ворогів, а сьогодні вона приваблює мільйони туристів з усього світу. Ця споруда простягається на тисячі кілометрів. Як вона називається?\nА) Вал Адріана\nБ) Велика Китайська стіна\nВ) Троянові вали\nГ) Берлінський мур",
+            "Навколо світу:\nУ якій країні є місто, відоме своїми червоними двоповерховими автобусами та телефонними будками?\nА) Ірландія\nБ) Канада\nВ) Велика Британія\nГ) Австралія",
+            "Мізки на максимум:\nСкільки сердець має восьминіг?\nА) Одне\nБ) Два\nВ) Три\nГ) Чотири",
+            "Мізки на максимум:\nЯка тварина може спати до 22 годин на добу?\nА) Лінивець\nБ) Коала\nВ) Панда\nГ) Їжак",
+            "Україна-ненька:\nЯке місто України називають містом каштанів?\nА) Львів\nБ) Одеса\nВ) Київ\nГ) Харків",
+            "Україна-ненька:\nЯкий українець був найближче до Нобелівської премії, але не здобув її через смерть?\nА) Іван Франко\nБ) Василь Стус\nВ) Ліна Костенко\nГ) Олесь Гончар",
+            "Кіно, попкорн і диван:\nЯк звати чарівника, який навчався у школі Гоґвортс?\nА) Гендальф\nБ) Мерлін\nВ) Гаррі Поттер\nГ) Доктор Стрендж",
+            "Кіно, попкорн і диван:\nЯкий актор зіграв головну роль у фільмі «Пірати Карибського моря»?\nА) Орландо Блум\nБ) Джонні Депп\nВ) Бред Пітт\nГ) Том Круз",
+            "Студент виживе — і не таке бачив:\nНазвіть популярний продукт, який найчастіше готують мешканці студентських гуртожитків?\nА) Гречка\nБ) Картопля\nВ) Макарони\nГ) Пельмені",
+            "Студент виживе — і не таке бачив:\nЗа що найбільше сперечаються у вечірній час мешканці гуртожитку БФПК?\nА) За місце на кухні\nБ) За пароль від Wi-Fi\nВ) За гарячу воду\nГ) За пульт від телевізора",
+            "Світ догори дриґом:\nЯка країна відома тим, що кенгуру в ній більше, ніж людей?\nА) Нова Зеландія\nБ) Австралія\nВ) ПАР\nГ) Аргентина",
+            "Світ догори дриґом:\nЯкою стравою, що виникла в Італії, полюбляють ласувати студенти БФПК?\nА) Лазанья\nБ) Піца\nВ) Різотто\nГ) Паста Карбонара",
+            "Логіка пішла на перерву:\nЯке математичне число стає більшим, якщо його перевернути догори дриґом?\nА) Число 3\nБ) Число 6\nВ) Число 8\nГ) Число 0",
+            "Логіка пішла на перерву:\nЩо можна побачити із заплющеними очима?\nА) Темряву\nБ) Сон\nВ) Думки\nГ) Майбутнє",
+            "Фінальний раунд:\nЯка тварина є символом мудрості та гри «Що? Де? Коли?»?\nА) Ворон\nБ) Сова\nВ) Орел\nГ) Лисиця",
+            "Фінальний раунд:\nЧи відзначав бодай один раз у своєму житті Маркіян Шашкевич День студента? (Нагадуємо, що він навчався у Львівській духовній семінарії та був слухачем Львівського університету)\nА) Так, щороку\nБ) Так, один раз\nВ) Ні\nГ) Невідомо"
         ];
 
         const setupScreen = document.getElementById('setupScreen');
@@ -427,6 +458,58 @@ const sampleQuestions = [
         const btnRestartGame = document.getElementById('btnRestartGame');
 
         const bgFinalVideo = document.getElementById('bgFinalVideo');
+
+        // Елементи кнопки "i" та діалогового вікна скидання
+        const btnInfoReset = document.getElementById('btnInfoReset');
+        const resetModal = document.getElementById('resetModal');
+        const btnConfirmResetYes = document.getElementById('btnConfirmResetYes');
+        const btnConfirmResetNo = document.getElementById('btnConfirmResetNo');
+
+        let splashTimeout = null;
+
+        function resetToMainMenu() {
+            clearInterval(timerInterval);
+            clearTimeout(splashTimeout);
+            stopClockSound();
+            stopConfetti();
+
+            localStorage.removeItem('chgk_game_state');
+
+            gameConfig = {
+                playersPerTeam: 6,
+                teams: []
+            };
+            currentRound = 1;
+            currentQuestionInRound = 1;
+            globalQuestionIndex = 1;
+            currentScreenId = 'setupScreen';
+
+            teamCountInput.value = 3;
+            playersPerTeamInput.value = 6;
+
+            hideAllScreens();
+            setupScreen.classList.remove('hidden');
+            renderTeamInputs();
+        }
+
+        btnInfoReset.addEventListener('click', () => {
+            resetModal.classList.remove('hidden');
+        });
+
+        btnConfirmResetNo.addEventListener('click', () => {
+            resetModal.classList.add('hidden');
+        });
+
+        btnConfirmResetYes.addEventListener('click', () => {
+            resetModal.classList.add('hidden');
+            resetToMainMenu();
+        });
+
+        resetModal.addEventListener('click', (e) => {
+            if (e.target === resetModal) {
+                resetModal.classList.add('hidden');
+            }
+        });
 
         function hideAllScreens() {
             setupScreen.classList.add('hidden');
@@ -562,7 +645,8 @@ const sampleQuestions = [
             playGongSound();
             saveGameState('splashScreen');
 
-            setTimeout(() => {
+            clearTimeout(splashTimeout);
+            splashTimeout = setTimeout(() => {
                 splashScreen.classList.add('hidden');
                 loadQuestionScreen();
             }, 3000);
@@ -757,14 +841,10 @@ const sampleQuestions = [
         }
 
         btnRestartGame.addEventListener('click', () => {
-            stopConfetti();
-            localStorage.removeItem('chgk_game_state');
-            hideAllScreens();
-            setupScreen.classList.remove('hidden');
-            renderTeamInputs();
+            resetToMainMenu();
         });
 
-        // Фотові жовті пилинки
+        // Фонові жовті пилинки
         const dustCanvas = document.getElementById('bgDustCanvas');
         const dustCtx = dustCanvas.getContext('2d');
         let dustParticles = [];
